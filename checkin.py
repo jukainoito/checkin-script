@@ -350,7 +350,7 @@ def query_cache(dynamodb=None):
 
 
 def get_cache():
-    cache = query_cache(site_type)
+    cache = query_cache()
     if len(cache) > 0:
         pprint(cache)
         return cache[0]['date']
