@@ -223,11 +223,9 @@ def get_checkin_info(check_status_obj):
         checkin_date = checkin_date[0]
         create_cache_table()
         cache_date = query_cache()
-        pprint(checkin_date)
-        pprint(cache_date)
         if cache_date is None:
             put_cache(checkin_date)
-        elif cache_date == checkin_date:
+        elif cache_date['date'] == checkin_date:
             return
         else:
             update_cache(checkin_date)
