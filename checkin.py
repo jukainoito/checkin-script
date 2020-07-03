@@ -304,6 +304,9 @@ def create_cache_table(dynamodb=None):
                 {
                     'AttributeName': 'type',
                     'KeyType': 'HASH'  # Partition key
+                }, {
+                    'AttributeName': 'date',
+                    'KeyType': 'RANGE'  # Sort key
                 }
             ],
             AttributeDefinitions=[
@@ -391,4 +394,5 @@ def delete_cache_table(dynamodb=None):
 
 
 if __name__ == '__main__':
-    main()
+    # main()
+    create_cache_table()
