@@ -14,6 +14,11 @@ import cfscrape
 import requests
 from lxml import etree
 
+import boto3
+from boto3.dynamodb.conditions import Key
+
+from pprint import pprint
+
 warnings.filterwarnings('ignore')
 
 parser = argparse.ArgumentParser()
@@ -55,7 +60,9 @@ COOKIES_FILE = os.path.realpath(os.path.join(os.getcwd(), args.cookies[0]))
 HOOK_URL = args.hook
 
 PROGRAM_DIR_PATH = os.path.dirname(os.path.abspath(sys.argv[0]))
-CACHE_FILE_PATH = os.path.join(PROGRAM_DIR_PATH, 'CACHE.json')
+# CACHE_FILE_PATH = os.path.join(PROGRAM_DIR_PATH, 'CACHE.json')
+
+DYNAMODB_TABLE_NAME = 'CheckinCache'
 
 taskTimer = None
 
@@ -210,30 +217,40 @@ def get_checkin_info(check_status_obj):
     # 	except subprocess.CalledProcessError:
     # 		traceback.print_exc()
     # CACHE[site_type] = toDay
-    checkin_date = re.findall('(\d{4}-\d{2}-\d{2})', checkin_info)
+    checkin_date = re.findall('(\\d{4}-\\d{2}-\\d{2})', checkin_info)
     if len(checkin_date) > 0:
         checkin_date = checkin_date[0]
-        data = {}
-        if os.path.exists(CACHE_FILE_PATH):
-            with open(CACHE_FILE_PATH, mode='r', encoding='utf-8') as f:
-                try:
-                    data = json.load(f)
-                except Exception:
-                    pass
-                finally:
-                    f.close()
-        if COOKIES_FILE in data.keys() and data[COOKIES_FILE] == checkin_date:
+        create_cache_table()
+        cache_date = query_cache()
+        if cache_date is None:
+            put_cache(site_type, checkin_date)
+        elif cache_date == checkin_date:
             return
+        else:
+            pass
 
+        # data = {}
+        # if os.path.exists(CACHE_FILE_PATH):
+        #     with open(CACHE_FILE_PATH, mode='r', encoding='utf-8') as f:
+        #         try:
+        #             data = json.load(f)
+        #         except Exception:
+        #             pass
+        #         finally:
+        #             f.close()
+        # if COOKIES_FILE in data.keys() and data[COOKIES_FILE] == checkin_date:
+        #     return
+        #
         if HOOK_URL is not None:
             payload = {'msg': checkin_info}
             logger.info('Send msg: {} to {}'.format(payload, HOOK_URL))
             requests.post(HOOK_URL, json=payload)
 
-        data[COOKIES_FILE] = checkin_date
-        with open(CACHE_FILE_PATH, mode='w', encoding='utf-8') as f:
-            json.dump(data, f)
-            f.close()
+        #
+        # data[COOKIES_FILE] = checkin_date
+        # with open(CACHE_FILE_PATH, mode='w', encoding='utf-8') as f:
+        #     json.dump(data, f)
+        #     f.close()
 
 
 def use_cf(site_obj):
@@ -271,6 +288,106 @@ def main():
         time.sleep(5)
     if HOOK_URL is not None:
         get_checkin_info(site_obj['checkin-status'])
+
+
+def get_dynamodb():
+    return boto3.resource('dynamodb', region_name='ap-southeast-1')
+
+
+def create_cache_table(dynamodb=None):
+    if not dynamodb:
+        dynamodb = get_dynamodb()
+    try:
+        table = dynamodb.create_table(
+            TableName=DYNAMODB_TABLE_NAME,
+            KeySchema=[
+                {
+                    'AttributeName': 'type',
+                    'KeyType': 'HASH'  # Partition key
+                }
+            ],
+            AttributeDefinitions=[
+                {
+                    'AttributeName': 'type',
+                    'AttributeType': 'S'
+                },
+                {
+                    'AttributeName': 'date',
+                    'AttributeType': 'S'
+                },
+
+            ],
+            ProvisionedThroughput={
+                'ReadCapacityUnits': 10,
+                'WriteCapacityUnits': 10
+            }
+        )
+        return table
+    except dynamodb.exceptions.ResourceInUseException:
+        pass
+
+
+def put_cache(type, date, dynamodb=None):
+    if not dynamodb:
+        dynamodb = get_dynamodb()
+    table = dynamodb.Table(DYNAMODB_TABLE_NAME)
+
+    response = table.put_item(
+        Item={
+            'type': type,
+            'date': date
+        }
+    )
+    return response
+
+
+def query_cache(dynamodb=None):
+    if not dynamodb:
+        dynamodb = get_dynamodb()
+
+    table = dynamodb.Table(DYNAMODB_TABLE_NAME)
+    response = table.query(
+        KeyConditionExpression=Key('type').eq(site_type)
+    )
+    return response['Items']
+
+
+def get_cache():
+    cache = query_cache(site_type)
+    if len(cache) > 0:
+        pprint(cache)
+        return cache[0]['date']
+    return None
+
+
+def set_cache(date):
+    put_cache(site_type, date)
+
+
+def update_cache(date, dynamodb=None):
+    if not dynamodb:
+        dynamodb = get_dynamodb()
+
+    table = dynamodb.Table(DYNAMODB_TABLE_NAME)
+    response = table.update_item(
+        Key={
+            'type': site_type
+        },
+        UpdateExpression="set date=:date",
+        ExpressionAttributeValues={
+            ':date': date,
+        },
+        ReturnValues="UPDATED_NEW"
+    )
+    return response
+
+
+def delete_cache_table(dynamodb=None):
+    if not dynamodb:
+        dynamodb = get_dynamodb()
+
+    table = dynamodb.Table(DYNAMODB_TABLE_NAME)
+    table.delete()
 
 
 if __name__ == '__main__':
