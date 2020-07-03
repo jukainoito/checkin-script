@@ -222,7 +222,7 @@ def get_checkin_info(check_status_obj):
     if len(checkin_date) > 0:
         checkin_date = checkin_date[0]
         create_cache_table()
-        cache_date = query_cache()
+        cache_date = get_cache()
         if cache_date is None:
             put_cache(checkin_date)
         elif cache_date['date'] == checkin_date:
