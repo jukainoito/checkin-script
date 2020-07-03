@@ -25,6 +25,7 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: run
       run: |
+        mkdir ~/.aws
         echo '${{ secrets.ZOD_COOKIES }}' > ~/zod.cookies.json
         echo '${{ secrets.TSDM_COOKIES }}' > ~/tsdm.cookies.json
         echo '${{ secrets.AWS_CONFIG }}' > ~/.aws/config
