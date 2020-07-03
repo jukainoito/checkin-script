@@ -370,9 +370,12 @@ def update_cache(date, dynamodb=None):
         Key={
             'type': site_type
         },
-        UpdateExpression="set date=:date",
+        UpdateExpression="set #d=:date",
         ExpressionAttributeValues={
             ':date': date,
+        },
+        ExpressionAttributeNames={
+            "#d": 'date'
         },
         ReturnValues="UPDATED_NEW"
     )
