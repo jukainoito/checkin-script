@@ -395,5 +395,4 @@ def delete_cache_table(dynamodb=None):
 
 
 if __name__ == '__main__':
-    # main()
-    create_cache_table()
+    main()
