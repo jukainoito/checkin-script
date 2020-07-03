@@ -225,7 +225,7 @@ def get_checkin_info(check_status_obj):
         cache_date = get_cache()
         if cache_date is None:
             put_cache(checkin_date)
-        elif cache_date['date'] == checkin_date:
+        elif cache_date == checkin_date:
             return
         else:
             update_cache(checkin_date)
