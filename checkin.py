@@ -305,20 +305,13 @@ def create_cache_table(dynamodb=None):
                 {
                     'AttributeName': 'type',
                     'KeyType': 'HASH'  # Partition key
-                }, {
-                    'AttributeName': 'date',
-                    'KeyType': 'RANGE'  # Sort key
                 }
             ],
             AttributeDefinitions=[
                 {
                     'AttributeName': 'type',
                     'AttributeType': 'S'
-                },
-                {
-                    'AttributeName': 'date',
-                    'AttributeType': 'S'
-                },
+                }
 
             ],
             ProvisionedThroughput={
@@ -395,4 +388,7 @@ def delete_cache_table(dynamodb=None):
 
 
 if __name__ == '__main__':
-    main()
+    # main()
+    create_cache_table()
+    put_cache('123')
+    # pprint(update_cache('1234'))
