@@ -228,7 +228,7 @@ def get_checkin_info(check_status_obj):
         elif cache_date == checkin_date:
             return
         else:
-            pass
+            update_cache(checkin_date)
 
         # data = {}
         # if os.path.exists(CACHE_FILE_PATH):
