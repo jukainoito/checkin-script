@@ -15,6 +15,7 @@ import requests
 from lxml import etree
 
 import boto3
+import botocore
 from boto3.dynamodb.conditions import Key
 
 from pprint import pprint
@@ -326,18 +327,18 @@ def create_cache_table(dynamodb=None):
             }
         )
         return table
-    except dynamodb.exceptions.ResourceInUseException:
+    except Exception as e:
         pass
 
 
-def put_cache(type, date, dynamodb=None):
+def put_cache(date, dynamodb=None):
     if not dynamodb:
         dynamodb = get_dynamodb()
     table = dynamodb.Table(DYNAMODB_TABLE_NAME)
 
     response = table.put_item(
         Item={
-            'type': type,
+            'type': site_type,
             'date': date
         }
     )
@@ -364,7 +365,7 @@ def get_cache():
 
 
 def set_cache(date):
-    put_cache(site_type, date)
+    put_cache(date)
 
 
 def update_cache(date, dynamodb=None):
