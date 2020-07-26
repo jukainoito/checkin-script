@@ -208,7 +208,7 @@ def get_checkin_info(check_status_obj):
         if p is not None:
             checkin_info_list.append(p)
     checkin_info = '\n'.join(checkin_info_list)
-    logger.info('{}'.format(checkin_info))
+    # logger.info('{}'.format(checkin_info))
     # if command is not None:
     # 	command_line = Template(command).substitute(info=checkinInfo)
     # 	print(command_line)
