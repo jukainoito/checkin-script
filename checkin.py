@@ -275,7 +275,7 @@ def main():
     global formhash
     if formhash is None:
         formhash = get_formhash(site_obj['formhash'])
-    logger.info('Use formhash: {}'.format(formhash))
+    # logger.info('Use formhash: {}'.format(formhash))
     data = site_obj['template']
     data['formhash'] = formhash
 
