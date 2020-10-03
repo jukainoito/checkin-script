@@ -219,7 +219,7 @@ def get_checkin_info(check_status_obj):
     # 		traceback.print_exc()
     # CACHE[site_type] = toDay
     checkin_date = re.findall('(\\d{4}-\\d{2}-\\d{2})', checkin_info)
-    if len(checkin_date) > 0:
+    if len(checkin_date) > 0  and False:
         checkin_date = checkin_date[0]
         create_cache_table()
         cache_date = get_cache()
