@@ -134,21 +134,28 @@ if proxy is not None:
     }
 
 
+def plus_checkin(formhash, cid):
+    url = URL_LINK[site_type]['checkin']
+    params = URL_LINK[site_type]['get_job']
+    params['verify'] = formhash
+    params['nowtime'] = str(int(time.time()*1000))
+    r = requests.get(url, params=params, headers=HEADERS, cookies=COOKIES, proxies=PROXIES, verify=False, timeout=60)
+    content = r.text
+    logger.info(content)
+
+    params = URL_LINK[site_type]['done_job']
+    params['verify'] = formhash
+    params['nowtime'] = str(int(time.time()*1000))
+    r = requests.get(url, params=params, headers=HEADERS, cookies=COOKIES, proxies=PROXIES, verify=False, timeout=60)
+    content = r.text
+    logger.info(content)
+
+
 def checkin(url, data):
     if site_type == 'plus':
-        params = URL_LINK[site_type]['get_job']
-        params['verify'] = data['formhash']
-        params['nowtime'] = str(int(time.time()*1000))
-        r = requests.get(url, params=params, headers=HEADERS, cookies=COOKIES, proxies=PROXIES, verify=False, timeout=60)
-        content = r.text
-        logger.info(content)
-
-        params = URL_LINK[site_type]['done_job']
-        params['verify'] = data['formhash']
-        params['nowtime'] = str(int(time.time()*1000))
-        r = requests.get(url, params=params, headers=HEADERS, cookies=COOKIES, proxies=PROXIES, verify=False, timeout=60)
-        content = r.text
-        return content
+        plus_checkin(data['formhash'], '15')
+        plus_checkin(data['formhash'], '14')
+        return dict()
     else:
         r = requests.post(url, data=data, headers=HEADERS, cookies=COOKIES, proxies=PROXIES, verify=False, timeout=60)
         content = r.text
