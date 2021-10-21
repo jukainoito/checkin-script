@@ -1,6 +1,3 @@
-botocore
-boto3
-awscli
 pysocks>=1.7.1
 requests>=2.23.0
 lxml>=4.5.0
