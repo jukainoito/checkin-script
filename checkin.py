@@ -137,6 +137,7 @@ if proxy is not None:
 def plus_checkin(formhash, cid):
     url = URL_LINK[site_type]['checkin']
     params = URL_LINK[site_type]['get_job']
+    params['cid'] = cid
     params['verify'] = formhash
     params['nowtime'] = str(int(time.time()*1000))
     r = requests.get(url, params=params, headers=HEADERS, cookies=COOKIES, proxies=PROXIES, verify=False, timeout=60)
@@ -144,6 +145,7 @@ def plus_checkin(formhash, cid):
     logger.info(content)
 
     params = URL_LINK[site_type]['done_job']
+    params['cid'] = cid
     params['verify'] = formhash
     params['nowtime'] = str(int(time.time()*1000))
     r = requests.get(url, params=params, headers=HEADERS, cookies=COOKIES, proxies=PROXIES, verify=False, timeout=60)
