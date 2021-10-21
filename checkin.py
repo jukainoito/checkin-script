@@ -11,7 +11,6 @@ import warnings
 import typing
 from urllib.parse import urlparse
 
-import cfscrape
 import requests
 from lxml import etree
 
@@ -38,7 +37,8 @@ parser.add_argument('-l', '-loop', '--loop', type=int, help='loop time secound, 
                     metavar="LOOP_TIME")
 parser.add_argument('-i', '-interval', '--interval', type=int, default=10, help='loop interval, ms, default 10',
                     metavar="LOOP_INTERVAL")
-parser.add_argument('-t', '-type', '--type', choices=['tsdm', 'zod'], help='choices checkin site, tsdm、zod',
+parser.add_argument('-t', '-type', '--type', choices=['tsdm', 'zod', 'plus'],
+                    help='choices checkin site, tsdm、zod、plus',
                     metavar="CHECKIN_SITE", required=False)
 parser.add_argument('-hook', '--hook', help='call web hook url, post json data {"msg": "msg content"} in body',
                     metavar="call web hook url")
@@ -66,6 +66,28 @@ logging.basicConfig(level=logging.INFO, format='{} - %(asctime)s \n\t %(levelnam
 logger = logging.getLogger(__name__)
 
 URL_LINK = {
+    "plus": {
+        "formhash": "http://www.south-plus.net/",
+        "checkin": "http://www.south-plus.net/plugin.php",
+        "checkin-status": None,
+        "get_job": {
+            "H_name": "tasks",
+            "action": "ajax",
+            "actions": "job",
+            "cid": "15",
+            "nowtime": "",
+            "verify": "",
+        },
+        "done_job": {
+            "H_name": "tasks",
+            "action": "ajax",
+            "actions": "job2",
+            "cid": "15",
+            "nowtime": "",
+            "verify": "",
+        },
+        "template": {}
+    },
     "tsdm": {
         "formhash": "https://www.tsdm39.net/forum.php",
         "checkin": "https://www.tsdm39.net/plugin.php?id=dsu_paulsign:sign&operation=qiandao&infloat=1&sign_as=1"
@@ -99,8 +121,7 @@ URL_LINK = {
 }
 
 HEADERS = {
-    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_1) AppleWebKit/537.36 (KHTML, like Gecko) '
-                  'Chrome/70.0.3538.77 Safari/537.36 '
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36'
 }
 
 COOKIES = {}
@@ -114,24 +135,44 @@ if proxy is not None:
 
 
 def checkin(url, data):
-    r = requests.post(url, data=data, headers=HEADERS, cookies=COOKIES, proxies=PROXIES, verify=False, timeout=60)
-    content = r.text
-    if content.find('登录') != -1:
-        logger.info('cookies expire')
-        sys.exit(0)
-    if content.find('未定义操作') != -1:
-        return {'error': 'formhash'}
-    result = re.search('(.*?)</div>', content).group(1)
+    if site_type == 'plus':
+        params = URL_LINK[site_type]['get_job']
+        params['verify'] = data['formhash']
+        params['nowtime'] = str(int(time.time()*1000))
+        r = requests.get(url, params=params, headers=HEADERS, cookies=COOKIES, proxies=PROXIES, verify=False, timeout=60)
+        content = r.text
+        logger.info(content)
+
+        params = URL_LINK[site_type]['done_job']
+        params['verify'] = data['formhash']
+        params['nowtime'] = str(int(time.time()*1000))
+        r = requests.get(url, params=params, headers=HEADERS, cookies=COOKIES, proxies=PROXIES, verify=False, timeout=60)
+        content = r.text
+        return content
+    else:
+        r = requests.post(url, data=data, headers=HEADERS, cookies=COOKIES, proxies=PROXIES, verify=False, timeout=60)
+        content = r.text
+        if content.find('登录') != -1:
+            logger.info('cookies expire')
+            sys.exit(0)
+        if content.find('未定义操作') != -1:
+            return {'error': 'formhash'}
+        result = re.search('(.*?)</div>', content).group(1)
     return result
 
 
 def get_form_hash(url):
     r = requests.get(url, headers=HEADERS, cookies=COOKIES, proxies=PROXIES, verify=False, timeout=60)
     html_etree = etree.HTML(r.text)
-    form_hash_value = html_etree.xpath("//*[@name='formhash']/@value")
-    form_hash_value = ''.join(form_hash_value)
-    if len(form_hash_value) == 0:
-        form_hash_value = re.match('.*;formhash=(\\w*).*', r.text, re.S).group(1)
+    if site_type == 'plus':
+        temp = html_etree.xpath("/html/head/script[4]/text()")
+        temp = ''.join(temp)
+        form_hash_value = re.search('verifyhash[^\']*\'(\\w+)\'', temp).group(1)
+    else:
+        form_hash_value = html_etree.xpath("//*[@name='formhash']/@value")
+        form_hash_value = ''.join(form_hash_value)
+        if len(form_hash_value) == 0:
+            form_hash_value = re.match('.*;formhash=(\\w*).*', r.text, re.S).group(1)
     return form_hash_value
 
 
@@ -167,7 +208,7 @@ def do_checkin(url, data):
     if isinstance(result, dict) and 'error' in result.keys():
         if result['error'] == 'formhash':
             logger.info("formhash: {}  错误，重新获取 formhash".format(data['formhash']))
-            data['formhash'] = get_form_hash(URL_LINK[site_type]['formhash'])
+            data['formhash'] = get_form_hash(URL_LINK[site_type]['formhash'], site_type)
             logger.info("当前 formhash: {}".format(data['formhash']))
             result = checkin(url, data)
     logger.info("{}".format(result))
@@ -183,6 +224,8 @@ def loop_do_checkin(file, url, data, start_time, loop_time):
 
 
 def get_checkin_info(check_status_obj):
+    if check_status_obj is None:
+        return
     url = check_status_obj['sign']
     has_checkin_xpath = check_status_obj['hasCheckinXpath']
     checkin_info_xpath = check_status_obj['checkinInfoXpath']
@@ -210,6 +253,7 @@ def get_checkin_info(check_status_obj):
 
 def use_cf(site_obj):
     try:
+        import cfscrape
         url_info = urlparse(site_obj['checkin'])
         domain_url = url_info.scheme + '://' + url_info.netloc
         cookie_value, user_agent = cfscrape.get_tokens(domain_url, proxies=PROXIES)
