@@ -67,8 +67,8 @@ logger = logging.getLogger(__name__)
 
 URL_LINK = {
     "plus": {
-        "formhash": "http://www.south-plus.net/",
-        "checkin": "http://www.south-plus.net/plugin.php",
+        "formhash": "https://www.south-plus.net/",
+        "checkin": "https://www.south-plus.net/plugin.php",
         "checkin-status": None,
         "get_job": {
             "H_name": "tasks",
