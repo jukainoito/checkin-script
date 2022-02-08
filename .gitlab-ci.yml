@@ -40,7 +40,7 @@ tsdm:
 
 zod:
   script:
-    - python checkin.py -t zod zod.json -p $PROXY
+    - python checkin.py -t zod zod.json -cf -p $PROXY
   allow_failure: true
 
 south-plus:
