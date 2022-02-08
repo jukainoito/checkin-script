@@ -1,0 +1,11 @@
+version: '3.1'
+
+services:
+  checkin:
+    image: python:3.9.5-slim-buster
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - ./:/worker:rw
+    working_dir: /worker
+    command: bash -c "pip install -r requirements.txt && (python checkin.py -t zod zod.cookies.json -p socks5h://host.docker.internal:7890 && python checkin.py -t tsdm tsdm.cookies.json && python checkin.py -t plus south-plus.net.cookies.json -p socks5h://host.docker.internal:7890 )"
