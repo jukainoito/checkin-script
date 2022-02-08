@@ -33,4 +33,6 @@ before_script:
 run:
   script:
     - pip install -r requirements.txt
+    - cat $TSDM
+    - echo $PROXY
     - python checkin.py -t tsdm $TSDM && python checkin.py -t plus $SOUTH_PLUS -p $PROXY && python checkin.py -t zod $ZOD -p $PROXY
