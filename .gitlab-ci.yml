@@ -23,7 +23,9 @@ cache:
     - venv/
 
 before_script:
-  - echo ${KF_CONFIG} > kf_config.json
+  - cat $TSDM > tsdm.json
+  - cat $ZOD > zod.json
+  - cat $SOUTH_PLUS > south_plus.json
   - python --version  # For debugging
   - pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
   - pip install -r requirements.txt
@@ -33,15 +35,15 @@ before_script:
 
 tsdm:
   script:
-    - python checkin.py -t tsdm $TSDM
+    - python checkin.py -t tsdm tsdm.json
   allow_failure: true
 
 zod:
   script:
-    - python checkin.py -t zod $ZOD -p $PROXY
+    - python checkin.py -t zod zod.json -p $PROXY
   allow_failure: true
 
 south-plus:
   script:
-    - python checkin.py -t plus $SOUTH_PLUS -p $PROXY
+    - python checkin.py -t plus south_plus.json -p $PROXY
   allow_failure: true
