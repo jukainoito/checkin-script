@@ -40,7 +40,7 @@ tsdm:
 
 zod:
   script:
-    - python checkin.py -t zod zod.json -p $PROXY
+    - python checkin.py -t zod zod.json -p $PROXY  -FlareSolverr $FLARE_SOLVERR
   allow_failure: true
 
 south-plus:

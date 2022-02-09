@@ -42,6 +42,9 @@ parser.add_argument('-t', '-type', '--type', choices=['tsdm', 'zod', 'plus'],
                     metavar="CHECKIN_SITE", required=False)
 parser.add_argument('-hook', '--hook', help='call web hook url, post json data {"msg": "msg content"} in body',
                     metavar="call web hook url")
+parser.add_argument('-FlareSolverr', '--FlareSolverr', help='FlareSolverr url, use FlareSolverr to bypass Cloudflare protection ',
+                    metavar="FlareSolverr url")
+# https://github.com/Anorov/cloudflare-scrape/issues/406
 parser.add_argument("-cf", "--cf", help="pass Cloudflare's anti-bot page", action="store_true")
 args = parser.parse_args()
 
@@ -51,6 +54,7 @@ site_type = args.type
 loopTime = args.loop
 interval = args.interval
 IS_CF = args.cf
+FLARE_SOLVERR_URL = args.FlareSolverr
 COOKIES_FILE = os.path.realpath(os.path.join(os.getcwd(), args.cookies[0]))
 
 HOOK_URL = args.hook
@@ -189,9 +193,11 @@ def read_cookies_file():
     f = None
     try:
         temp, ext = os.path.splitext(COOKIES_FILE)
+        global RAW_COOKIES
         if ext.lower() == '.json':
             with open(COOKIES_FILE, mode='r', encoding='utf-8') as f:
                 data = json.load(f)
+                RAW_COOKIES = data
                 if isinstance(data, list):
                     cookies = {obj['name']: obj['value'] for obj in data}
                 else:
@@ -260,6 +266,32 @@ def get_checkin_info(check_status_obj):
             requests.post(HOOK_URL, json=payload)
 
 
+def flare_solverr(site_obj):
+    try:
+        url_info = urlparse(site_obj['checkin'])
+        domain_url = url_info.scheme + '://' + url_info.netloc
+        r = requests.post(FLARE_SOLVERR_URL,  json={
+            "cmd": "request.get",
+            "url": domain_url,
+            "cookies": RAW_COOKIES,
+            "proxy": {"url": PROXIES['http']} if PROXIES else None,
+            "maxTimeout": 50000,
+        }, verify=False,
+                         timeout=60000)
+        ret = r.json()
+        status = ret['status']
+        if status != 'ok':
+            logger.error('FlareSolverr fail')
+            logger.error(ret['message'])
+            return
+        ret = ret['solution']
+        HEADERS['user-agent'] = ret['userAgent']
+        temp_cookies = ret['cookies']
+        for t in temp_cookies:
+            COOKIES[t['name']] = t['value']
+    finally:
+        ...
+
 def use_cf(site_obj):
     try:
         import cfscrape
@@ -278,8 +310,9 @@ def main():
     COOKIES = read_cookies_file()
 
     site_obj = URL_LINK[args.type]
-
-    if IS_CF:
+    if FLARE_SOLVERR_URL is not None:
+        flare_solverr(site_obj)
+    elif IS_CF:
         use_cf(site_obj)
 
     global form_hash
