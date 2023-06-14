@@ -93,11 +93,11 @@ URL_LINK = {
         "template": {}
     },
     "tsdm": {
-        "formhash": "https://www.tsdm39.net/forum.php",
-        "checkin": "https://www.tsdm39.net/plugin.php?id=dsu_paulsign:sign&operation=qiandao&infloat=1&sign_as=1"
+        "formhash": "https://www.tsdm39.com/forum.php",
+        "checkin": "https://www.tsdm39.com/plugin.php?id=dsu_paulsign:sign&operation=qiandao&infloat=1&sign_as=1"
                    "&inajax=1",
         "checkin-status": {
-            "sign": "https://www.tsdm39.net/plugin.php?id=dsu_paulsign:sign",
+            "sign": "https://www.tsdm39.com/plugin.php?id=dsu_paulsign:sign",
             "checkinInfoXpath": '//*[@class="mn"]/p',
             "hasCheckinXpath": 'string(//*[@class="mt"][1])'
         },
